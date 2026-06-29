@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>SANVIR'S GROUP - Inventory System</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 1200px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
+        
+        /* ডাইনামিক গ্লাসমরফিজম লগইন প্যানেল */
+        #login-area { width: 100%; max-width: 400px; text-align: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.25); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); color: white; }
+        #login-area h2 { color: #fff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-top: 0; }
+        #login-area p { color: #f0f0f0; }
+        #login-area input { background: rgba(255, 255, 255, 0.9); border: none; color: #333; font-weight: 500; }
+        #login-area input::placeholder { color: #666; }
+        
+        .hidden { display: none !important; }
+        .alert-box { background-color: #ffeaea; border-left: 5px solid #dc3545; color: #a94442; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; margin: 5px; }
+        .btn-login { background: #ffffff; color: #1e3c72; width: 100%; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .btn-login:hover { background: #f1f1f1; transform: translateY(-2px); }
+        .btn-qty { background: #17a2b8; color: white; padding: 8px 12px; }
+        .btn-del { background: #dc3545; color: white; }
+        .btn-edit { background: #ffc107; color: black; }
+        .btn-print { background: #4caf50; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #2a5298; color: white; }
+        .panel { border: 1px solid #eee; padding: 20px; margin-bottom: 20px; border-radius: 15px; background: #f9f9f9; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .log-text { font-size: 11px; color: #555; text-align: left; background: #f1f1f1; padding: 5px; border-radius: 4px; max-height: 75px; overflow-y: auto; margin: 0; list-style: none; }
+        
+        .input-inline-qty { width: 60px; text-align: center; padding: 6px; margin: 0 2px; border: 1px solid #aaa; border-radius: 6px; display: inline-block; font-weight: bold; }
+        
+        .software-credit { margin-top: 25px; font-size: 13px; color: #e0e0e0; font-weight: 500; border-top: 1px dashed rgba(255,255,255,0.3); padding-top: 15px; text-align: center; }
+        .software-credit strong { color: #ffffff; font-weight: bold; }
+        .container .software-credit { color: #555; border-top: 1px dashed #ccc; }
+        .container .software-credit strong { color: #1e3c72; }
+    </style>
+</head>
+<body>
+
+<div id="login-area">
+    <h2>SANVIR'S GROUP</h2>
+    <p>সিস্টেমে প্রবেশ করুন</p>
+    <input type="text" id="username" placeholder="ইউজারনেম">
+    <input type="password" id="pass" placeholder="পাসওয়ার্ড">
+    <button class="btn-login" onclick="checkLogin()">লগইন করুন</button>
+    
+    <p style="margin-top: 20px; font-size: 12px; margin-bottom: 0;">
+        লগইন করতে সমস্যা হচ্ছে? <a href="#" onclick="emergencyReset()" style="color: #ff9800; font-weight: bold; text-decoration: none;">অ্যাডমিন অ্যাকাউন্ট রিসেট করুন</a>
+    </p>
+
+    <div class="software-credit">
+        সফটওয়্যার তৈরি করেছেন: <strong>সানভীর নিল</strong>
+    </div>
+</div>
+
+<div class="container hidden" id="app-area">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="welcomeMsg" style="color: #2a5298; margin: 0;"></h2>
+        <button style="background: #6c757d; color: white;" onclick="logout()">লগআউট</button>
+    </div>
+    
+    <div id="alert-box" class="alert-box hidden"></div>
+    
+    <div id="admin-panel" class="hidden panel">
+        <h3>🛠 এডমিন কন্ট্রোল প্যানেল (টিম ও ক্যাটাগরি ম্যানেজমেন্ট)</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <strong>নতুন ক্যাটাগরি যোগ করুন:</strong>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <input type="text" id="newCatName" placeholder="যেমন: Wood, Decor, Skincare" style="margin: 0;">
+                <button style="background: #28a745; color: white; white-space: nowrap; margin: 0;" onclick="addCategory()">ক্যাটাগরি তৈরি করুন</button>
+            </div>
+            <div id="catListDisplay" style="margin-top:10px;"></div>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <div>
+            <strong>নতুন টিম মেম্বার যোগ করুন:</strong>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 5px;">
+                <input type="text" id="empUser" placeholder="ইউজারনেম" style="margin: 0;">
+                <input type="password" id="empPass" placeholder="পাসওয়ার্ড" style="margin: 0;">
+                <select id="empRole" onchange="toggleCatPermissionView()" style="margin: 0;">
+                    <option value="staff">স্টাফ (নির্দিষ্ট ক্যাটাগরি)</option>
+                    <option value="manager">ম্যানেজার (সব ফুল অ্যাক্সেস)</option>
+                </select>
+            </div>
+            
+            <div id="staffPermissionSection">
+                <p style="margin: 10px 0 5px 0; font-weight: bold;">নির্দিষ্ট ক্যাটাগরির অনুমতি দিন (টিক দিন):</p>
+                <div id="catCheckboxes" class="checkbox-group"></div>
+            </div>
+            
+            <button style="background: #007bff; color: white; margin-top: 10px;" onclick="addEmployee()">নতুন মেম্বার নিশ্চিত করুন</button>
+        </div>
+
+        <div style="margin-top:25px;">
+            <h4>👥 বর্তমানে যুক্ত টিম মেম্বারদের তালিকা ও রোল:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ইউজারনেম</th>
+                        <th>পদবি / রোল</th>
+                        <th>অনুমোদিত ক্যাটাগরি সমূহ</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="staffListBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>📦 পণ্য যোগ করুন:</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+            <input type="text" id="pName" placeholder="পণ্যের নাম">
+            <select id="pCategory"></select>
+            <input type="text" id="pModel" placeholder="মডেল">
+            <input type="text" id="pBarcode" placeholder="বারকোড (সংখ্যা)">
+            <input type="number" id="pQty" placeholder="বর্তমান পরিমাণ">
+            <input type="number" id="pAlertLimit" placeholder="অ্যালার্ট সংখ্যা">
+            <button style="background: #28a745; color: white;" onclick="addProduct()">পণ্য যোগ করুন</button>
+        </div>
+    </div>
+
+    <input type="text" id="search" placeholder="🔍 নাম, মডেল বা বারকোড লিখে সার্চ করুন..." onkeyup="renderTable()" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px;">
+    
+    <table>
+        <thead><tr><th>নাম</th><th>ক্যাটাগরি</th><th>মডেল</th><th>বারকোড</th><th>পরিমাণ</th><th>অ্যালার্ট সীমা</th><th style="width: 220px;">সর্বশেষ এডিট ট্র্যাকিং (লগ)</th><th style="width: 250px;">অ্যাকশন</th></tr></thead>
+        <tbody id="inventoryBody"></tbody>
+    </table>
+
+    <div class="software-credit" style="margin-top: 40px;">
+        System Powered By: <strong>SANVIR'S GROUP</strong> | Software Developed by: <strong>Sanvir Neel</strong>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTargetUser" style="margin-top: 0; color: #2a5298;"></h3>
+        <p style="font-weight: bold; margin-bottom: 5px;">ক্যাটাগরি অনুমতি পরিবর্তন করুন:</p>
+        <div id="modalCatCheckboxes" class="checkbox-group" style="flex-direction: column;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+            <button style="background: #6c757d; color: white; margin: 0;" onclick="closeModal()">বাতিল</button>
+            <button style="background: #28a745; color: white; margin: 0;" onclick="savePermissionUpdate()">আপডেট করুন</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let inventory = JSON.parse(localStorage.getItem('myInventory')) || [];
+    let categories = JSON.parse(localStorage.getItem('myCategories')) || ["General"];
+    
+    // ইউজার ডাটাবেজ সুরক্ষাকরণ লজিক ফিক্স
+    let users = JSON.parse(localStorage.getItem('myUsers'));
+    if (!users || !users.admin || typeof users !== 'object') {
+        users = { "admin": { pass: "admin123", role: "admin", cats: [] } };
+        localStorage.setItem('myUsers', JSON.stringify(users));
+    }
+    
+    let currentUser = null;
+    let editingUserKey = null;
+
+    function checkLogin() {
+        let u = document.getElementById('username').value.trim();
+        let p = document.getElementById('pass').value.trim();
+        
+        // রিয়েলটাইম লোকাল স্টোরেজ থেকে রি-চেক করা হচ্ছে যাতে কোনো মিসিং না হয়
+        let latestUsers = JSON.parse(localStorage.getItem('myUsers')) || users;
+        
+        if (latestUsers[u] && latestUsers[u].pass === p) {
+            currentUser = latestUsers[u];
+            currentUser.username = u;
+            showApp();
+        } else { 
+            alert("ভুল ইউজারনেম অথবা পাসওয়ার্ড! সঠিক তথ্য দিন বা অ্যাডমিন অ্যাকাউন্ট রিসেট করুন।"); 
+        }
+    }
+
+    function emergencyReset() {
+        if(confirm("অ্যাডমিন পাসওয়ার্ড রিসেট করতে চান? ইউজারনেম 'admin' এবং পাসওয়ার্ড 'admin123' সেট হবে।")) {
+            let latestUsers = JSON.parse(localStorage.getItem('myUsers')) || {};
+            latestUsers["admin"] = { pass: "admin123", role: "admin", cats: [] };
+            users = latestUsers;
+            localStorage.setItem('myUsers', JSON.stringify(latestUsers));
+            alert("রিসেট সফল হয়েছে!\n\nইউজারনেম: admin\nপাসওয়ার্ড: admin123");
+            location.reload();
+        }
+    }
+
+    function showApp() {
+        document.getElementById('login-area').classList.add('hidden');
+        document.getElementById('app-area').classList.remove('hidden');
+        
+        let roleName = "স্টাফ";
+        if(currentUser.role === 'admin') roleName = "এডমিন";
+        if(currentUser.role === 'manager') roleName = "ম্যানেজার";
+        
+        document.getElementById('welcomeMsg').innerText = `স্বাগতম: ${currentUser.username.toUpperCase()} (${roleName})`;
+        if(currentUser.role === 'admin') document.getElementById('admin-panel').classList.remove('hidden');
+        updateUI();
+        renderTable();
+    }
+
+    function toggleCatPermissionView() {
+        let role = document.getElementById('empRole').value;
+        let section = document.getElementById('staffPermissionSection');
+        if(role === 'manager') {
+            section.classList.add('hidden');
+        } else {
+            section.classList.remove('hidden');
+        }
+    }
+
+    function updateUI() {
+        let select = document.getElementById('pCategory');
+        select.innerHTML = "";
+        categories.forEach(cat => select.innerHTML += `<option value="${cat}">${cat}</option>`);
+        
+        if(currentUser.role === 'admin') {
+            let catDisplay = document.getElementById('catListDisplay');
+            catDisplay.innerHTML = "";
+            categories.forEach(cat => {
+                catDisplay.innerHTML += `<span style="background:#eee; padding:5px 10px; margin:4px; border-radius:5px; display:inline-block; font-size:14px;">${cat} <button onclick="deleteCategory('${cat}')" style="border:none; cursor:pointer; background:transparent; color:red; font-weight:bold; margin-left:5px;">x</button></span> `;
+            });
+
+            let checkDisplay = document.getElementById('catCheckboxes');
+            checkDisplay.innerHTML = "";
+            categories.forEach(cat => {
+                checkDisplay.innerHTML += `<label style="cursor:pointer; margin-right:15px;"><input type="checkbox" class="catCheck" value="${cat}"> ${cat}</label> `;
+            });
+
+            renderStaffList();
+        }
+    }
+
+    function addEmployee() {
+        let u = document.getElementById('empUser').value.trim();
+        let p = document.getElementById('empPass').value.trim();
+        let role = document.getElementById('empRole').value;
+        let checkedCats = [];
+        
+        if(role === 'staff') {
+            document.querySelectorAll('.catCheck:checked').forEach(el => checkedCats.push(el.value));
+        }
+
+        if(u && p) {
+            if(users[u]) { alert("এই ইউজারনেম দিয়ে অলরেডি অ্যাকাউন্ট আছে!"); return; }
+            users[u] = { pass: p, role: role, cats: checkedCats };
+            localStorage.setItem('myUsers', JSON.stringify(users));
+            document.getElementById('empUser').value = '';
+            document.getElementById('empPass').value = '';
+            document.querySelectorAll('.catCheck').forEach(el => el.checked = false);
+            updateUI();
+            alert("নতুন টিম মেম্বার সফলভাবে যোগ করা হয়েছে!");
+        } else { alert("ইউজারনেম এবং পাসওয়ার্ড দুটিই পূরণ করুন!"); }
+    }
+
+    function renderStaffList() {
+        let tbody = document.getElementById('staffListBody');
+        tbody.innerHTML = "";
+        for (let u in users) {
+            if (u !== 'admin') {
+                let displayRole = users[u].role === 'manager' ? '<strong style="color:blue;">ম্যানেজার</strong>' : 'স্টাফ';
+                let allowedCats = users[u].role === 'manager' ? '<b>সকল ক্যাটাগরি (Full Access)</b>' : (users[u].cats.length > 0 ? users[u].cats.join(', ') : '<span style="color:red;">কোনো অনুমতি নেই</span>');
+                
+                let editBtn = users[u].role === 'staff' ? `<button class="btn-edit" onclick="openEditModal('${u}')">✏️ অনুমতি পরিবর্তন</button>` : '';
+                
+                tbody.innerHTML += `<tr>
+                    <td style="font-weight:bold;">${u}</td>
+                    <td>${displayRole}</td>
+                    <td>${allowedCats}</td>
+                    <td>
+                        ${editBtn}
+                        <button class="btn-del" onclick="deleteStaff('${u}')">রিমুভ</button>
+                    </td>
+                </tr>`;
+            }
+        }
+    }
+
+    function openEditModal(username) {
+        editingUserKey = username;
+        document.getElementById('modalTargetUser').innerText = "স্টাফ: " + username.toUpperCase();
+        let modalCheckDisplay = document.getElementById('modalCatCheckboxes');
+        modalCheckDisplay.innerHTML = "";
+        categories.forEach(cat => {
+            let isChecked = users[username].cats.includes(cat) ? "checked" : "";
+            modalCheckDisplay.innerHTML += `<label style="cursor:pointer; margin:5px 0;"><input type="checkbox" class="modalCatCheck" value="${cat}" ${isChecked}> ${cat}</label>`;
+        });
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; editingUserKey = null; }
+
+    function savePermissionUpdate() {
+        if (!editingUserKey) return;
+        let updatedCats = [];
+        document.querySelectorAll('.modalCatCheck:checked').forEach(el => updatedCats.push(el.value));
+        users[editingUserKey].cats = updatedCats;
+        localStorage.setItem('myUsers', JSON.stringify(users));
+        closeModal(); updateUI(); renderTable();
+        alert("ক্যাটাগরি পারমিশন সফলভাবে আপডেট করা হয়েছে!");
+    }
+
+    function deleteStaff(u) { if(confirm(`আপনি কি নিশ্চিতভাবে "${u}" কে রিমুভ করতে চান?`)) { delete users[u]; localStorage.setItem('myUsers', JSON.stringify(users)); updateUI(); } }
+
+    function addCategory() {
+        let name = document.getElementById('newCatName').value.trim();
+        if(name && !categories.includes(name)) {
+            categories.push(name); localStorage.setItem('myCategories', JSON.stringify(categories));
+            document.getElementById('newCatName').value = ''; updateUI();
+        }
+    }
+
+    function deleteCategory(cat) {
+        if(confirm(`"${cat}" ক্যাটাগরি ডিলিট করবেন?`)) {
+            categories = categories.filter(c => c !== cat);
+            localStorage.setItem('myCategories', JSON.stringify(categories));
+            for(let u in users) { if(users[u].cats) { users[u].cats = users[u].cats.filter(c => c !== cat); } }
+            localStorage.setItem('myUsers', JSON.stringify(users));
+            updateUI(); renderTable();
+        }
+    }
+
+    function addProduct() {
+        let alertInput = document.getElementById('pAlertLimit').value;
+        let timestamp = new Date().toLocaleString('bn-BD');
+        
+        let p = { 
+            name: document.getElementById('pName').value.trim(), 
+            category: document.getElementById('pCategory').value, 
+            model: document.getElementById('pModel').value.trim(), 
+            barcode: document.getElementById('pBarcode').value.trim(),
+            qty: parseInt(document.getElementById('pQty').value) || 0,
+            alertLimit: alertInput !== "" ? parseInt(alertInput) : 10,
+            logs: [`যোগ করেছেন: ${currentUser.username.toUpperCase()} (${timestamp})`] 
+        };
+        if(p.name) {
+            inventory.push(p); localStorage.setItem('myInventory', JSON.stringify(inventory));
+            document.getElementById('pName').value = ''; document.getElementById('pModel').value = ''; document.getElementById('pBarcode').value = ''; document.getElementById('pQty').value = ''; document.getElementById('pAlertLimit').value = '';
+            renderTable();
+        } else { alert("পণ্যের নাম দিন!"); }
+    }
+
+    function checkLowStock() {
+        let alertBox = document.getElementById('alert-box');
+        let lowStock = inventory.filter(item => {
+            let canView = (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.cats.includes(item.category));
+            let limit = item.alertLimit !== undefined ? item.alertLimit : 10;
+            return canView && item.qty < limit;
+        });
+        if (lowStock.length > 0) {
+            alertBox.classList.remove('hidden');
+            let itemsText = lowStock.map(i => {
+                let limit = i.alertLimit !== undefined ? i.alertLimit : 10;
+                return `<li>${i.name} [মডেল: ${i.model}] - বর্তমান স্টক: <strong style="color:red;">${i.qty}</strong> (সীমা: ${limit})</li>`;
+            }).join('');
+            alertBox.innerHTML = "⚠️ <strong>স্টক অ্যালার্ট: নিচের পণ্যগুলোর স্টক সীমার নিচে নেমে গেছে!</strong><ul>" + itemsText + "</ul>";
+        } else { alertBox.classList.add('hidden'); }
+    }
+
+    function renderTable() {
+        checkLowStock();
+        let query = document.getElementById('search').value.toLowerCase().trim();
+        let tbody = document.getElementById('inventoryBody');
+        tbody.innerHTML = "";
+        
+        inventory.forEach((item, index) => {
+            let canView = (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.cats.includes(item.category));
+            let matchesName = item.name ? item.name.toLowerCase().includes(query) : false;
+            let matchesModel = item.model ? item.model.toLowerCase().includes(query) : false;
+            let matchesBarcode = item.barcode ? item.barcode.toLowerCase().includes(query) : false;
+
+            if(canView && (matchesName || matchesModel || matchesBarcode)) {
+                let printBtn = item.barcode ? `<button class="btn-print" onclick="printBarcode('${item.barcode}', '${item.name}')">🖨 প্রিন্ট</button>` : '';
+                let limitText = item.alertLimit !== undefined ? item.alertLimit : 10;
+                let logItems = item.logs ? item.logs.map(log => `<li>• ${log}</li>`).reverse().join('') : '<li>• কোনো হিস্ট্রি নেই</li>';
+                
+                tbody.innerHTML += `<tr>
+                    <td><b>${item.name}</b></td>
+                    <td><span style="background:#e3f2fd; padding:3px 8px; border-radius:5px;">${item.category}</span></td>
+                    <td>${item.model || '-'}</td>
+                    <td>${item.barcode || '-'}</td>
+                    <td><strong style="font-size:16px;">${item.qty}</strong></td>
+                    <td>${limitText} টি</td>
+                    <td>
+                        <ul class="log-text">${logItems}</ul>
+                    </td>
+                    <td>
+                        <button class="btn-qty" onclick="changeQtyAdvanced(${index}, 'minus')">-</button>
+                        <input type="number" id="inlineQty_${index}" class="input-inline-qty" value="1" min="1">
+                        <button class="btn-qty" onclick="changeQtyAdvanced(${index}, 'plus')">+</button>
+                        ${printBtn}
+                        ${(currentUser.role === 'admin' || currentUser.role === 'manager') ? `<button class="btn-del" onclick="del(${index})">ডিলিট</button>` : ''}
+                    </td>
+                </tr>`;
+            }
+        });
+    }
+
+    function printBarcode(val, name) {
+        let win = window.open('', '', 'width=400,height=200');
+        win.document.write(`<html><body><div style="text-align:center;"><h3>${name}</h3><svg id="barcode"></svg></div><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"><\/script><script>JsBarcode("#barcode", "${val}", { format: "CODE128", displayValue: true });window.print();window.close();<\/script></body></html>`);
+    }
+
+    function changeQtyAdvanced(index, type) {
+        let inputEl = document.getElementById(`inlineQty_${index}`);
+        let changeAmount = parseInt(inputEl.value) || 1;
+        if(changeAmount < 1) changeAmount = 1;
+
+        let timestamp = new Date().toLocaleString('bn-BD');
+        if(!inventory[index].logs) inventory[index].logs = [];
+
+        if (type === 'plus') {
+            inventory[index].qty += changeAmount;
+            inventory[index].logs.push(`স্টক বাড়িয়েছেন (+${changeAmount}): ${currentUser.username.toUpperCase()} (${timestamp})`);
+        } else if (type === 'minus') {
+            inventory[index].qty -= changeAmount;
+            if (inventory[index].qty < 0) inventory[index].qty = 0;
+            inventory[index].logs.push(`স্টক কমিয়েছেন (-${changeAmount}): ${currentUser.username.toUpperCase()} (${timestamp})`);
+        }
+
+        if(inventory[index].logs.length > 10) inventory[index].logs.shift();
+
+        localStorage.setItem('myInventory', JSON.stringify(inventory));
+        renderTable();
+    }
+
+    function del(index) { 
+        if(confirm(`আপনি কি নিশ্চিতভাবে "${inventory[index].name}" পণ্যটি ডিলিট করতে চান?`)) {
+            inventory.splice(index, 1); 
+            localStorage.setItem('myInventory', JSON.stringify(inventory)); 
+            renderTable(); 
+        }
+    }
+    
+    function logout() { location.reload(); }
+</script>
+
+</body>
+</html>
